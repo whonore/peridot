@@ -1,0 +1,2 @@
+# dotty
+A dotfile manager
