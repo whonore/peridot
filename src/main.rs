@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
+use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -66,36 +67,70 @@ fn to_path(path: &str) -> Result<PathBuf> {
         .collect()
 }
 
-fn check_link(dir: &PathBuf, link: &Link) -> Result<()> {
+#[derive(Debug)]
+struct AppOutput {
+    name: String,
+    results: Vec<String>,
+}
+
+impl AppOutput {
+    fn new(name: &str) -> Self {
+        AppOutput {
+            name: name.into(),
+            results: Vec::new(),
+        }
+    }
+
+    fn add_result(&mut self, res: String) {
+        self.results.push(res)
+    }
+}
+
+impl fmt::Display for AppOutput {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name)?;
+        if let Some((last, results)) = self.results.split_last() {
+            results
+                .iter()
+                .map(|res| write!(f, "\n├── {}", res))
+                .collect::<fmt::Result>()?;
+            write!(f, "\n└── {}", last)?;
+        }
+        writeln!(f)
+    }
+}
+
+fn check_link(out: &mut AppOutput, dir: &PathBuf, link: &Link) -> Result<()> {
     let (to, from) = link;
     let to = dir.join(to_path(to)?);
     let from = to_path(from)?;
     let real_to = fs::read_link(&from)?;
 
     if to == real_to {
-        println!("Ok: {} -> {}", from.display(), to.display());
+        out.add_result(format!("✓  {} → {}", from.display(), to.display()))
     } else {
-        println!(
-            "Err: {} -> {} (expected {})",
+        out.add_result(format!(
+            "❌  {} → {} (expected {})",
             from.display(),
             real_to.display(),
             to.display()
-        );
-    }
+        ))
+    };
     Ok(())
 }
 
 fn check(dotfile: &PathBuf, name: &String, app: &AppConfig) -> Result<()> {
-    println!("{}\n==========", name);
+    let mut out = AppOutput::new(name);
     let dir = dotfile
         .join(app.dir.as_ref().unwrap_or(name))
         .canonicalize()?;
     if let Some(links) = &app.links {
-        links.iter().map(|link| check_link(&dir, link)).collect()
-    } else {
-        println!("No links, skipping...");
-        Ok(())
-    }
+        for link in links {
+            check_link(&mut out, &dir, link)?
+        }
+    };
+    println!("{}", out);
+    Ok(())
 }
 
 fn main() -> Result<()> {
