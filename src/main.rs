@@ -119,10 +119,10 @@ fn check_link(out: &mut AppOutput, dir: &PathBuf, link: &Link) -> Result<()> {
     Ok(())
 }
 
-fn check(dotfile: &PathBuf, name: &String, app: &AppConfig) -> Result<()> {
+fn check(dotfile: &PathBuf, name: &str, app: &AppConfig) -> Result<()> {
     let mut out = AppOutput::new(name);
     let dir = dotfile
-        .join(app.dir.as_ref().unwrap_or(name))
+        .join(app.dir.as_deref().unwrap_or(name))
         .canonicalize()?;
     if let Some(links) = &app.links {
         for link in links {
