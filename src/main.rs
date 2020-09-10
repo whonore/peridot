@@ -16,9 +16,39 @@ static SUCCESS: &str = "✓";
 static FAILURE: &str = "❌";
 static LINKSTO: &str = "→";
 static NOTLINKSTO: &str = "↛";
-static EDGE: &str = "├";
-static STRAIGHT: &str = "│";
-static CORNER: &str = "└";
+static TREE_EDGE: &str = "├";
+static TREE_VERT: &str = "│";
+static TREE_CORNER: &str = "└";
+
+static TITLE_TLCORNER: &str = "╔";
+static TITLE_TRCORNER: &str = "╗";
+static TITLE_BLCORNER: &str = "╚";
+static TITLE_BRCORNER: &str = "╝";
+static TITLE_VERT: &str = "║";
+static TITLE_HORZ: &str = "═";
+
+struct Title<'a>(&'a str);
+
+impl fmt::Display for Title<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let w = self.0.len();
+        writeln!(
+            f,
+            "{}{}{}",
+            TITLE_TLCORNER,
+            TITLE_HORZ.repeat(w + 2),
+            TITLE_TRCORNER
+        )?;
+        writeln!(f, "{} {} {}", TITLE_VERT, self.0, TITLE_VERT)?;
+        write!(
+            f,
+            "{}{}{}",
+            TITLE_BLCORNER,
+            TITLE_HORZ.repeat(w + 2),
+            TITLE_BRCORNER
+        )
+    }
+}
 
 #[derive(Debug)]
 enum AppResult {
@@ -78,7 +108,7 @@ impl AppResult {
         if let Some((first, rest)) = self.lines().split_first() {
             write!(f, "\n{}─{}", edge, first)?;
             rest.iter()
-                .map(|res| write!(f, "\n{}  {}", STRAIGHT, res))
+                .map(|res| write!(f, "\n{}  {}", TREE_VERT, res))
                 .collect::<fmt::Result>()?;
         };
         Ok(())
@@ -110,13 +140,12 @@ impl AppOutput {
 
 impl fmt::Display for AppOutput {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: put name in a box
-        write!(f, "{}", self.name)?;
+        write!(f, "{}", Title(&self.name))?;
         if let Some((last, results)) = self.results.split_last() {
             for res in results {
-                res.display(f, EDGE)?
+                res.display(f, TREE_EDGE)?
             }
-            last.display(f, CORNER)?;
+            last.display(f, TREE_CORNER)?;
         }
         writeln!(f)
     }
