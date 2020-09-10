@@ -16,6 +16,9 @@ static SUCCESS: &str = "✓";
 static FAILURE: &str = "❌";
 static LINKSTO: &str = "→";
 static NOTLINKSTO: &str = "↛";
+static EDGE: &str = "├";
+static STRAIGHT: &str = "│";
+static CORNER: &str = "└";
 
 #[derive(Debug)]
 enum AppResult {
@@ -27,60 +30,58 @@ enum AppResult {
 }
 
 impl AppResult {
-    fn display_link(src: &PathBuf, dst: &PathBuf) -> String {
-        format!(
+    fn display_link(src: &PathBuf, dst: &PathBuf) -> Vec<String> {
+        vec![format!(
             "{}─ {} {} {}",
             SUCCESS,
             src.display(),
             LINKSTO,
             dst.display()
-        )
+        )]
     }
 
-    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: Option<&str>) -> String {
-        let msg = format!(
+    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: Option<&str>) -> Vec<String> {
+        let mut lines = vec![format!(
             "{}─ {} {} {}",
             FAILURE,
             src.display(),
             NOTLINKSTO,
             dst.display()
-        );
+        )];
         if let Some(err) = err {
-            format!("{} (Error: {})", msg, err)
-        } else {
-            msg
-        }
+            lines.push(format!("   Error: {}", err));
+        };
+        lines
     }
-}
 
-impl fmt::Display for AppResult {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn lines(&self) -> Vec<String> {
         match self {
-            AppResult::Ok(Link { src, dst, status }) => write!(
-                f,
-                "{}",
-                match status {
-                    SrcUnexists => AppResult::display_notlink(src, dst, None),
-                    DstUnexists =>
-                        AppResult::display_notlink(src, dst, Some("target does not exist")),
-                    Exists => AppResult::display_link(src, dst),
-                    Unexpected(found) => AppResult::display_notlink(
-                        src,
-                        dst,
-                        Some(&format!("found {}", found.display()))
-                    ),
-                }
-            ),
+            AppResult::Ok(Link { src, dst, status }) => match status {
+                SrcUnexists => AppResult::display_notlink(src, dst, None),
+                DstUnexists => AppResult::display_notlink(src, dst, Some("target does not exist")),
+                Exists => AppResult::display_link(src, dst),
+                Unexpected(found) => AppResult::display_notlink(
+                    src,
+                    dst,
+                    Some(&format!("found {}", found.display())),
+                ),
+            },
             AppResult::Err {
                 error,
                 link: Some((src, dst)),
-            } => write!(
-                f,
-                "{}",
-                AppResult::display_notlink(src, dst, Some(&format!("{}", error)))
-            ),
-            AppResult::Err { error, link: None } => write!(f, "{}─ (Error: {})", FAILURE, error),
+            } => AppResult::display_notlink(src, dst, Some(&format!("{}", error))),
+            AppResult::Err { error, link: None } => vec![format!("{}─ Error: {}", FAILURE, error)],
         }
+    }
+
+    fn display(&self, f: &mut fmt::Formatter, edge: &str) -> fmt::Result {
+        if let Some((first, rest)) = self.lines().split_first() {
+            write!(f, "\n{}─{}", edge, first)?;
+            rest.iter()
+                .map(|res| write!(f, "\n{}  {}", STRAIGHT, res))
+                .collect::<fmt::Result>()?;
+        };
+        Ok(())
     }
 }
 
@@ -112,11 +113,10 @@ impl fmt::Display for AppOutput {
         // TODO: put name in a box
         write!(f, "{}", self.name)?;
         if let Some((last, results)) = self.results.split_last() {
-            results
-                .iter()
-                .map(|res| write!(f, "\n├──{}", res))
-                .collect::<fmt::Result>()?;
-            write!(f, "\n└──{}", last)?;
+            for res in results {
+                res.display(f, EDGE)?
+            }
+            last.display(f, CORNER)?;
         }
         writeln!(f)
     }
