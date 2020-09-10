@@ -12,11 +12,82 @@ use link::{check_link, make_link, Link, LinkStatus};
 use path::PathError;
 use LinkStatus::*;
 
+static SUCCESS: &str = "✓";
+static FAILURE: &str = "❌";
+static LINKSTO: &str = "→";
+static NOTLINKSTO: &str = "↛";
+
+#[derive(Debug)]
+enum AppResult {
+    Ok(Link),
+    Err {
+        error: PathError,
+        link: Option<(PathBuf, PathBuf)>,
+    },
+}
+
+impl AppResult {
+    fn display_link(src: &PathBuf, dst: &PathBuf) -> String {
+        format!(
+            "{}─ {} {} {}",
+            SUCCESS,
+            src.display(),
+            LINKSTO,
+            dst.display()
+        )
+    }
+
+    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: Option<&str>) -> String {
+        let msg = format!(
+            "{}─ {} {} {}",
+            FAILURE,
+            src.display(),
+            NOTLINKSTO,
+            dst.display()
+        );
+        if let Some(err) = err {
+            format!("{} (Error: {})", msg, err)
+        } else {
+            msg
+        }
+    }
+}
+
+impl fmt::Display for AppResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AppResult::Ok(Link { src, dst, status }) => write!(
+                f,
+                "{}",
+                match status {
+                    SrcUnexists => AppResult::display_notlink(src, dst, None),
+                    DstUnexists =>
+                        AppResult::display_notlink(src, dst, Some("target does not exist")),
+                    Exists => AppResult::display_link(src, dst),
+                    Unexpected(found) => AppResult::display_notlink(
+                        src,
+                        dst,
+                        Some(&format!("found {}", found.display()))
+                    ),
+                }
+            ),
+            AppResult::Err {
+                error,
+                link: Some((src, dst)),
+            } => write!(
+                f,
+                "{}",
+                AppResult::display_notlink(src, dst, Some(&format!("{}", error)))
+            ),
+            AppResult::Err { error, link: None } => write!(f, "{}─ (Error: {})", FAILURE, error),
+        }
+    }
+}
+
 #[derive(Debug)]
 struct AppOutput {
     name: String,
-    // TODO: use Ok, Fail, ? type and push formatting to Display
-    results: Vec<String>,
+    results: Vec<AppResult>,
 }
 
 impl AppOutput {
@@ -27,35 +98,12 @@ impl AppOutput {
         }
     }
 
-    fn add_link(&mut self, link: &Link) {
-        self.results.push(match &link.status {
-            SrcUnexists => format!("?─ {} ↛ {}", link.src.display(), link.dst.display()),
-            DstUnexists => format!(
-                "❌─ {} ↛ {} (Failed: target does not exist)",
-                link.src.display(),
-                link.dst.display()
-            ),
-            Exists => format!("✓─ {} → {}", link.src.display(), link.dst.display()),
-            Unexpected(found) => format!(
-                "❌─ {} ↛ {} (expected: {})",
-                link.src.display(),
-                found.display(),
-                link.dst.display()
-            ),
-        })
+    fn output_link(&mut self, res: Link) {
+        self.results.push(AppResult::Ok(res))
     }
 
-    fn add_error(&mut self, error: &PathError, src: Option<&PathBuf>, dst: Option<&PathBuf>) {
-        if src.is_none() || dst.is_none() {
-            self.results.push(format!("❌─ (Failed: {})", error))
-        } else {
-            self.results.push(format!(
-                "❌─ {} ↛ {} (Failed: {})",
-                src.unwrap().display(),
-                dst.unwrap().display(),
-                error
-            ))
-        }
+    fn output_error(&mut self, error: PathError, link: Option<(PathBuf, PathBuf)>) {
+        self.results.push(AppResult::Err { error, link })
     }
 }
 
@@ -86,16 +134,16 @@ fn link(base_dir: &PathBuf, name: &str, app: &AppConfig, check_only: bool) -> Re
                     SrcUnexists => {
                         if !check_only {
                             match make_link(&link.src, &link.dst) {
-                                Ok(link) => out.add_link(&link),
-                                Err(e) => out.add_error(&e, Some(&link.src), Some(&link.dst)),
+                                Ok(link) => out.output_link(link),
+                                Err(e) => out.output_error(e, Some((link.src, link.dst))),
                             }
                         } else {
-                            out.add_link(&link)
+                            out.output_link(link)
                         }
                     }
-                    _ => out.add_link(&link),
+                    _ => out.output_link(link),
                 },
-                Err(e) => out.add_error(&e, None, None),
+                Err(e) => out.output_error(e, None),
             }
         }
     };
