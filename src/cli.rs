@@ -18,6 +18,7 @@ pub struct AppConfig {
     pub links: Option<Vec<(String, String)>>,
 }
 
+// TODO: allow specifying specific apps
 #[derive(Debug, StructOpt)]
 #[structopt(name = "dotty", about = "A dotfile manager")]
 pub struct Cli {
