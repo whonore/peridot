@@ -151,7 +151,7 @@ impl fmt::Display for AppOutput {
     }
 }
 
-fn link(base_dir: &PathBuf, name: &str, app: &AppConfig, check_only: bool) -> Result<()> {
+fn link(base_dir: &PathBuf, name: &str, app: &AppConfig, check_only: bool) -> Result<AppOutput> {
     let mut out = AppOutput::new(name);
     let dir = base_dir
         .join(app.dir.as_deref().unwrap_or(name))
@@ -176,17 +176,16 @@ fn link(base_dir: &PathBuf, name: &str, app: &AppConfig, check_only: bool) -> Re
             }
         }
     };
-    println!("{}", out);
-    Ok(())
+    Ok(out)
 }
 
 fn main() -> Result<()> {
     let args = Cli::from_args();
     let config = Config::new(args)?;
 
-    config
-        .apps
-        .iter()
-        .map(|(name, app)| link(&config.base_dir, name, app, config.check_only))
-        .collect()
+    for (name, app) in config.apps {
+        let out = link(&config.base_dir, &name, &app, config.check_only)?;
+        println!("{}", out);
+    }
+    Ok(())
 }
