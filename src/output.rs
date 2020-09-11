@@ -142,9 +142,9 @@ impl AppResult {
     fn display(&self, f: &mut fmt::Formatter, edge: &str) -> fmt::Result {
         if let Some((first, rest)) = self.lines().split_first() {
             write!(f, "\n{}{}{}", edge, TREE_HORZ, first)?;
-            rest.iter()
-                .map(|res| write!(f, "\n{}  {}", TREE_VERT, res))
-                .collect::<fmt::Result>()?;
+            for res in rest {
+                write!(f, "\n{}  {}", TREE_VERT, res)?;
+            }
         };
         Ok(())
     }
