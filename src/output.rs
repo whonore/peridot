@@ -142,11 +142,13 @@ impl AppResult {
         }
     }
 
-    fn display(&self, f: &mut fmt::Formatter, edge: &str) -> fmt::Result {
+    fn display(&self, f: &mut fmt::Formatter, last: bool) -> fmt::Result {
         if let Some((first, rest)) = self.lines().split_first() {
+            let edge = if last { TREE_CORNER } else { TREE_EDGE };
             write!(f, "\n{}{}{}", edge, TREE_HORZ, first)?;
             for res in rest {
-                write!(f, "\n{}  {}", TREE_VERT, res)?;
+                let edge = if last { " " } else { TREE_VERT };
+                write!(f, "\n{}  {}", edge, res)?;
             }
         };
         Ok(())
@@ -181,9 +183,9 @@ impl fmt::Display for AppOutput {
         write!(f, "{}", Title(&self.name))?;
         if let Some((last, results)) = self.results.split_last() {
             for res in results {
-                res.display(f, TREE_EDGE)?
+                res.display(f, false)?
             }
-            last.display(f, TREE_CORNER)?;
+            last.display(f, true)?;
         }
         writeln!(f)
     }
