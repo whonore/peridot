@@ -53,8 +53,7 @@ impl fmt::Display for Title<'_> {
     }
 }
 
-#[derive(Debug)]
-struct AppError<'a>(&'a str);
+struct AppError<'a>(&'a dyn fmt::Display);
 
 impl fmt::Display for AppError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -102,7 +101,7 @@ impl AppResult {
         )]
     }
 
-    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: &str) -> Vec<String> {
+    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: &dyn fmt::Display) -> Vec<String> {
         vec![
             format!(
                 "{}{} {} {} {}",
@@ -119,8 +118,12 @@ impl AppResult {
     fn lines(&self) -> Vec<String> {
         match self {
             AppResult::Ok(Link { src, dst, status }) => match status {
-                SrcUnexists => AppResult::display_notlink(src, dst, "link does not exist"),
-                DstUnexists => AppResult::display_notlink(src, dst, "target does not exist"),
+                SrcUnexists => {
+                    AppResult::display_notlink(src, dst, &"link does not exist".to_string())
+                }
+                DstUnexists => {
+                    AppResult::display_notlink(src, dst, &"target does not exist".to_string())
+                }
                 Exists => AppResult::display_link(src, dst),
                 Unexpected(found) => {
                     AppResult::display_notlink(src, dst, &format!("found {}", AppLink(found)))
@@ -129,12 +132,12 @@ impl AppResult {
             AppResult::Err {
                 error,
                 link: Some((src, dst)),
-            } => AppResult::display_notlink(src, dst, &format!("{}", error)),
+            } => AppResult::display_notlink(src, dst, error),
             AppResult::Err { error, link: None } => vec![format!(
                 "{}{} {}",
                 Color::Red.paint(FAILURE),
                 TREE_HORZ,
-                AppError(&format!("{}", error))
+                AppError(error)
             )],
         }
     }
