@@ -1,3 +1,4 @@
+use ansi_term::Color;
 use std::fmt;
 use std::path::PathBuf;
 
@@ -12,6 +13,7 @@ static NOTLINKSTO: &str = "↛";
 
 static TREE_EDGE: &str = "├";
 static TREE_VERT: &str = "│";
+static TREE_HORZ: &str = "─";
 static TREE_CORNER: &str = "└";
 
 static TITLE_TLCORNER: &str = "╔";
@@ -21,6 +23,7 @@ static TITLE_BRCORNER: &str = "╝";
 static TITLE_VERT: &str = "║";
 static TITLE_HORZ: &str = "═";
 
+#[derive(Debug)]
 struct Title<'a>(&'a str);
 
 impl fmt::Display for Title<'_> {
@@ -33,7 +36,13 @@ impl fmt::Display for Title<'_> {
             TITLE_HORZ.repeat(w + 2),
             TITLE_TRCORNER
         )?;
-        writeln!(f, "{} {} {}", TITLE_VERT, self.0, TITLE_VERT)?;
+        writeln!(
+            f,
+            "{} {} {}",
+            TITLE_VERT,
+            Color::Blue.bold().paint(self.0),
+            TITLE_VERT
+        )?;
         write!(
             f,
             "{}{}{}",
@@ -41,6 +50,34 @@ impl fmt::Display for Title<'_> {
             TITLE_HORZ.repeat(w + 2),
             TITLE_BRCORNER
         )
+    }
+}
+
+#[derive(Debug)]
+struct AppError<'a>(&'a str);
+
+impl fmt::Display for AppError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} {}",
+            Color::Red.underline().bold().paint("Error:"),
+            self.0
+        )
+    }
+}
+
+#[derive(Debug)]
+struct AppLink<'a>(&'a PathBuf);
+
+impl fmt::Display for AppLink<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let color = if self.0.exists() {
+            Color::Cyan
+        } else {
+            Color::Red
+        };
+        write!(f, "{}", color.paint(self.0.display().to_string()))
     }
 }
 
@@ -53,55 +90,58 @@ enum AppResult {
     },
 }
 
-// TODO: colorize output
 impl AppResult {
     fn display_link(src: &PathBuf, dst: &PathBuf) -> Vec<String> {
         vec![format!(
-            "{}─ {} {} {}",
-            SUCCESS,
-            src.display(),
-            LINKSTO,
-            dst.display()
+            "{}{} {} {} {}",
+            Color::Green.paint(SUCCESS),
+            TREE_HORZ,
+            AppLink(src),
+            Color::Green.paint(LINKSTO),
+            AppLink(dst)
         )]
     }
 
-    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: Option<&str>) -> Vec<String> {
-        let mut lines = vec![format!(
-            "{}─ {} {} {}",
-            FAILURE,
-            src.display(),
-            NOTLINKSTO,
-            dst.display()
-        )];
-        if let Some(err) = err {
-            lines.push(format!("   Error: {}", err));
-        };
-        lines
+    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: &str) -> Vec<String> {
+        vec![
+            format!(
+                "{}{} {} {} {}",
+                Color::Red.paint(FAILURE),
+                TREE_HORZ,
+                AppLink(src),
+                Color::Red.paint(NOTLINKSTO),
+                AppLink(dst),
+            ),
+            format!("  {}", AppError(err)),
+        ]
     }
 
     fn lines(&self) -> Vec<String> {
         match self {
             AppResult::Ok(Link { src, dst, status }) => match status {
-                SrcUnexists => AppResult::display_notlink(src, dst, None),
-                DstUnexists => AppResult::display_notlink(src, dst, Some("target does not exist")),
+                SrcUnexists => AppResult::display_notlink(src, dst, "link does not exist"),
+                DstUnexists => AppResult::display_notlink(src, dst, "target does not exist"),
                 Exists => AppResult::display_link(src, dst),
-                Unexpected(found) => AppResult::display_notlink(
-                    src,
-                    dst,
-                    Some(&format!("found {}", found.display())),
-                ),
+                Unexpected(found) => {
+                    AppResult::display_notlink(src, dst, &format!("found {}", AppLink(found)))
+                }
             },
             AppResult::Err {
                 error,
                 link: Some((src, dst)),
-            } => AppResult::display_notlink(src, dst, Some(&format!("{}", error))),
-            AppResult::Err { error, link: None } => vec![format!("{}─ Error: {}", FAILURE, error)],
+            } => AppResult::display_notlink(src, dst, &format!("{}", error)),
+            AppResult::Err { error, link: None } => vec![format!(
+                "{}{} {}",
+                Color::Red.paint(FAILURE),
+                TREE_HORZ,
+                AppError(&format!("{}", error))
+            )],
         }
     }
 
     fn display(&self, f: &mut fmt::Formatter, edge: &str) -> fmt::Result {
         if let Some((first, rest)) = self.lines().split_first() {
-            write!(f, "\n{}─{}", edge, first)?;
+            write!(f, "\n{}{}{}", edge, TREE_HORZ, first)?;
             rest.iter()
                 .map(|res| write!(f, "\n{}  {}", TREE_VERT, res))
                 .collect::<fmt::Result>()?;
