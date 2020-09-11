@@ -18,9 +18,8 @@ pub struct AppConfig {
     pub links: Option<Vec<(String, String)>>,
 }
 
-// TODO: allow specifying specific apps
 #[derive(Debug, StructOpt)]
-#[structopt(name = "dotty", about = "A dotfile manager")]
+#[structopt(about)]
 pub struct Cli {
     #[structopt(parse(from_os_str))]
     base_dir: Option<PathBuf>,
@@ -28,6 +27,10 @@ pub struct Cli {
     config_file: Option<PathBuf>,
     #[structopt(short = "C", long = "check-only")]
     check_only: bool,
+    #[structopt(short = "a", long = "include-app")]
+    include_apps: Option<Vec<String>>,
+    #[structopt(short = "A", long = "exclude-app")]
+    exclude_apps: Option<Vec<String>>,
 }
 
 fn home_dir() -> PathBuf {
@@ -55,12 +58,30 @@ impl Config {
             .config_file
             .unwrap_or_else(|| find_config(&base_dir))
             .canonicalize()?;
-        let apps: AppsWrap = toml::from_str(&std::fs::read_to_string(&config_file)?)?;
+        let mut apps: AppsWrap = toml::from_str(&std::fs::read_to_string(&config_file)?)?;
+
+        if let Some(f) = Config::app_filter(args.include_apps, args.exclude_apps) {
+            apps = AppsWrap(apps.0.into_iter().filter(|(app, _)| f(app)).collect());
+        }
 
         Ok(Config {
             base_dir,
             apps: apps.0,
             check_only: args.check_only,
         })
+    }
+
+    fn app_filter(
+        incl: Option<Vec<String>>,
+        excl: Option<Vec<String>>,
+    ) -> Option<Box<dyn Fn(&String) -> bool>> {
+        match (incl, excl) {
+            (Some(incl), Some(excl)) => {
+                Some(Box::new(move |x| incl.contains(x) && !excl.contains(x)))
+            }
+            (Some(incl), None) => Some(Box::new(move |x| incl.contains(x))),
+            (None, Some(excl)) => Some(Box::new(move |x| !excl.contains(x))),
+            (None, None) => None,
+        }
     }
 }

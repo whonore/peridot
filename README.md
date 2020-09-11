@@ -1,2 +1,2 @@
 # dotty
-A dotfile manager
+A dotfile manager.
