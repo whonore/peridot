@@ -13,8 +13,10 @@ struct AppsWrap(Apps);
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
-    pub dir: Option<String>,
+    pub srcdir: Option<String>,
+    pub dstdir: Option<String>,
     pub description: Option<String>,
+    // TODO: Allow one string when src and dst have same name
     pub links: Option<Vec<(String, String)>>,
 }
 

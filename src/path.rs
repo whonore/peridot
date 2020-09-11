@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum PathError {
-    InvalidEnvVar { path: String, env: String },
+    InvalidEnvVar { path: PathBuf, env: String },
     NoParent(String),
     IoError(io::Error),
 }
@@ -15,9 +15,12 @@ use PathError::*;
 impl fmt::Display for PathError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            InvalidEnvVar { path, env } => {
-                write!(f, "Could not find environment variable {} in {}", env, path)
-            }
+            InvalidEnvVar { path, env } => write!(
+                f,
+                "Could not find environment variable {} in {}",
+                env,
+                path.display()
+            ),
             NoParent(path) => write!(f, "{} must have a parent directory", path),
             IoError(e) => write!(f, "{}", e),
         }
@@ -30,9 +33,9 @@ impl From<io::Error> for PathError {
     }
 }
 
-pub fn to_path(path: &str) -> std::result::Result<PathBuf, PathError> {
-    Path::new(path)
-        .iter()
+// TODO: allow referencing other app dirs
+pub fn eval_env(path: &Path) -> std::result::Result<PathBuf, PathError> {
+    path.iter()
         .map(|comp| {
             let comp = comp.to_str().unwrap();
             if comp.starts_with('$') {

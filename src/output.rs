@@ -1,6 +1,6 @@
 use ansi_term::Color;
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::link::{Link, LinkStatus};
 use crate::path::PathError;
@@ -67,7 +67,7 @@ impl fmt::Display for AppError<'_> {
 }
 
 #[derive(Debug)]
-struct AppLink<'a>(&'a PathBuf);
+struct AppLink<'a>(&'a Path);
 
 impl fmt::Display for AppLink<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -90,7 +90,7 @@ enum AppResult {
 }
 
 impl AppResult {
-    fn display_link(src: &PathBuf, dst: &PathBuf) -> Vec<String> {
+    fn display_link(src: &Path, dst: &Path) -> Vec<String> {
         vec![format!(
             "{}{} {} {} {}",
             Color::Green.paint(SUCCESS),
@@ -101,7 +101,7 @@ impl AppResult {
         )]
     }
 
-    fn display_notlink(src: &PathBuf, dst: &PathBuf, err: &dyn fmt::Display) -> Vec<String> {
+    fn display_notlink(src: &Path, dst: &Path, err: &dyn fmt::Display) -> Vec<String> {
         vec![
             format!(
                 "{}{} {} {} {}",

@@ -1,8 +1,8 @@
 use std::fs;
 use std::os::unix;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use crate::path::{to_path, PathError};
+use crate::path::{eval_env, PathError};
 
 #[derive(Debug)]
 pub enum LinkStatus {
@@ -55,10 +55,15 @@ impl Link {
     }
 }
 
-pub fn check_link(dir: &PathBuf, link: &(String, String)) -> std::result::Result<Link, PathError> {
+pub fn check_link(
+    dstdir: &Path,
+    srcdir: &Path,
+    link: &(String, String),
+) -> std::result::Result<Link, PathError> {
     let (dst, src) = link;
-    let dst = dir.join(to_path(dst)?);
-    let src = to_path(src)?;
+    // TODO: eval_env the dirs only once
+    let dst = eval_env(&dstdir.join(Path::new(dst)))?;
+    let src = eval_env(&srcdir.join(Path::new(src)))?;
 
     if src.exists() {
         let real_dst = src.read_link()?;
