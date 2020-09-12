@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
@@ -17,8 +17,7 @@ struct AppConfig {
     srcdir: Option<String>,
     dstdir: Option<String>,
     description: Option<String>,
-    // TODO: Allow one string when src and dst have same name
-    links: Option<Vec<(String, String)>>,
+    links: Option<Vec<Vec<String>>>,
 }
 
 #[derive(Debug)]
@@ -26,7 +25,7 @@ pub struct App {
     pub srcdir: PathBuf,
     pub dstdir: PathBuf,
     pub description: Option<String>,
-    pub links: Option<Vec<(String, String)>>,
+    pub links: Vec<(String, String)>,
 }
 
 impl App {
@@ -35,8 +34,30 @@ impl App {
             srcdir: resolve_env(Path::new(app.srcdir.as_deref().unwrap_or("$HOME")))?,
             dstdir: resolve_env(&base_dir.join(app.dstdir.as_deref().unwrap_or(name)))?,
             description: app.description,
-            links: app.links,
+            links: app
+                .links
+                .map(|links| {
+                    links
+                        .into_iter()
+                        .map(|link| {
+                            App::normalize_link(link)
+                                .ok_or_else(|| anyhow!("{}: links must be length 1 or 2", name))
+                        })
+                        .collect()
+                })
+                .unwrap_or_else(|| Ok(vec![]))?,
         })
+    }
+
+    fn normalize_link(mut link: Vec<String>) -> Option<(String, String)> {
+        let mut x = link.drain(..);
+        let first = x.next()?;
+        let second = x.next().unwrap_or_else(|| first.clone());
+        if x.next().is_none() {
+            Some((first, second))
+        } else {
+            None
+        }
     }
 }
 

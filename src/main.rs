@@ -14,26 +14,24 @@ use LinkStatus::*;
 fn link(apps: &Apps, name: &str, app: &App, check_only: bool) -> Result<AppOutput> {
     let mut out = AppOutput::new(name);
 
-    if let Some(links) = &app.links {
-        for link in links {
-            match check_link(apps, &app.dstdir, &app.srcdir, link) {
-                Ok(link) => match link.status {
-                    SrcUnexists => {
-                        if !check_only {
-                            match make_link(link.src.clone(), link.dst.clone()) {
-                                Ok(link) => out.output_link(link),
-                                Err(e) => out.output_error(e, Some((link.src, link.dst))),
-                            }
-                        } else {
-                            out.output_link(link)
+    for link in &app.links {
+        match check_link(apps, &app.dstdir, &app.srcdir, link) {
+            Ok(link) => match link.status {
+                SrcUnexists => {
+                    if !check_only {
+                        match make_link(link.src.clone(), link.dst.clone()) {
+                            Ok(link) => out.output_link(link),
+                            Err(e) => out.output_error(e, Some((link.src, link.dst))),
                         }
+                    } else {
+                        out.output_link(link)
                     }
-                    _ => out.output_link(link),
-                },
-                Err(e) => out.output_error(e, None),
-            }
+                }
+                _ => out.output_link(link),
+            },
+            Err(e) => out.output_error(e, None),
         }
-    };
+    }
     Ok(out)
 }
 
