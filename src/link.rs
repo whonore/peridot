@@ -1,8 +1,10 @@
 use std::fs;
 use std::os::unix;
 use std::path::{Path, PathBuf};
+use std::result;
 
-use crate::path::{eval_env, PathError};
+use crate::cli::Apps;
+use crate::path::{resolve_env, resolve_name, PathError};
 
 #[derive(Debug)]
 pub enum LinkStatus {
@@ -56,13 +58,17 @@ impl Link {
 }
 
 pub fn check_link(
+    apps: &Apps,
     dstdir: &Path,
     srcdir: &Path,
     link: &(String, String),
-) -> std::result::Result<Link, PathError> {
+) -> result::Result<Link, PathError> {
     let (dst, src) = link;
-    let dst = dstdir.join(eval_env(Path::new(dst))?);
-    let src = srcdir.join(eval_env(Path::new(src))?);
+    let dst = dstdir.join(resolve_name(
+        &|name| apps.resolve_name(name),
+        &resolve_env(Path::new(dst))?,
+    )?);
+    let src = srcdir.join(resolve_env(Path::new(src))?);
 
     if src.exists() {
         let real_dst = src.read_link()?;
@@ -78,7 +84,7 @@ pub fn check_link(
     }
 }
 
-pub fn make_link(src: PathBuf, dst: PathBuf) -> std::result::Result<Link, PathError> {
+pub fn make_link(src: PathBuf, dst: PathBuf) -> result::Result<Link, PathError> {
     let dir = src
         .parent()
         .ok_or_else(|| PathError::NoParent(src.display().to_string()))?;
