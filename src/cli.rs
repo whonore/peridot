@@ -5,11 +5,11 @@ use std::env;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-type Apps = HashMap<String, AppConfig>;
+use crate::path::eval_env;
 
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
-struct AppsWrap(Apps);
+struct AppsWrap(HashMap<String, AppConfig>);
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -18,6 +18,25 @@ pub struct AppConfig {
     pub description: Option<String>,
     // TODO: Allow one string when src and dst have same name
     pub links: Option<Vec<(String, String)>>,
+}
+
+#[derive(Debug)]
+pub struct App {
+    pub srcdir: PathBuf,
+    pub dstdir: PathBuf,
+    pub description: Option<String>,
+    pub links: Option<Vec<(String, String)>>,
+}
+
+impl App {
+    fn new(base_dir: &Path, name: &str, app: AppConfig) -> Result<Self> {
+        Ok(App {
+            srcdir: eval_env(Path::new(app.srcdir.as_deref().unwrap_or("$HOME")))?,
+            dstdir: eval_env(&base_dir.join(app.dstdir.as_deref().unwrap_or(name)))?,
+            description: app.description,
+            links: app.links,
+        })
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -46,7 +65,7 @@ fn find_config(base_dir: &Path) -> PathBuf {
 #[derive(Debug)]
 pub struct Config {
     pub base_dir: PathBuf,
-    pub apps: Apps,
+    pub apps: HashMap<String, App>,
     pub check_only: bool,
 }
 
@@ -63,12 +82,21 @@ impl Config {
         let mut apps: AppsWrap = toml::from_str(&std::fs::read_to_string(&config_file)?)?;
 
         if let Some(f) = Config::app_filter(args.include_apps, args.exclude_apps) {
-            apps = AppsWrap(apps.0.into_iter().filter(|(app, _)| f(app)).collect());
+            apps.0 = apps.0.into_iter().filter(|(name, _)| f(name)).collect();
         }
+
+        let apps: HashMap<String, App> = apps
+            .0
+            .into_iter()
+            .map(|(name, app)| {
+                let app = App::new(&base_dir, &name, app)?;
+                Ok((name, app))
+            })
+            .collect::<Result<_>>()?;
 
         Ok(Config {
             base_dir,
-            apps: apps.0,
+            apps,
             check_only: args.check_only,
         })
     }
