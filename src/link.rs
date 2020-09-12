@@ -61,9 +61,8 @@ pub fn check_link(
     link: &(String, String),
 ) -> std::result::Result<Link, PathError> {
     let (dst, src) = link;
-    // TODO: eval_env the dirs only once
-    let dst = eval_env(&dstdir.join(Path::new(dst)))?;
-    let src = eval_env(&srcdir.join(Path::new(src)))?;
+    let dst = dstdir.join(eval_env(Path::new(dst))?);
+    let src = srcdir.join(eval_env(Path::new(src))?);
 
     if src.exists() {
         let real_dst = src.read_link()?;
@@ -79,11 +78,11 @@ pub fn check_link(
     }
 }
 
-pub fn make_link(src: &PathBuf, dst: &PathBuf) -> std::result::Result<Link, PathError> {
+pub fn make_link(src: PathBuf, dst: PathBuf) -> std::result::Result<Link, PathError> {
     let dir = src
         .parent()
         .ok_or_else(|| PathError::NoParent(src.display().to_string()))?;
     fs::create_dir_all(dir)?;
-    unix::fs::symlink(dst, src)?;
-    Ok(Link::exists(src.clone(), dst.clone()))
+    unix::fs::symlink(&dst, &src)?;
+    Ok(Link::exists(src, dst))
 }

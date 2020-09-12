@@ -1,4 +1,5 @@
 use std::env;
+use std::error;
 use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -26,6 +27,8 @@ impl fmt::Display for PathError {
         }
     }
 }
+
+impl error::Error for PathError {}
 
 impl From<io::Error> for PathError {
     fn from(e: io::Error) -> Self {
