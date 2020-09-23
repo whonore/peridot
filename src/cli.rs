@@ -88,8 +88,8 @@ pub struct Cli {
     base_dir: Option<PathBuf>,
     #[structopt(short = "c", long = "config-file", parse(from_os_str))]
     config_file: Option<PathBuf>,
-    #[structopt(short = "C", long = "check-only")]
-    check_only: bool,
+    #[structopt(short = "L", long = "link")]
+    link: bool,
     #[structopt(short = "a", long = "include-app")]
     include_apps: Option<Vec<String>>,
     #[structopt(short = "A", long = "exclude-app")]
@@ -108,7 +108,7 @@ fn find_config(base_dir: &Path) -> PathBuf {
 pub struct Config {
     pub base_dir: PathBuf,
     pub apps: Apps,
-    pub check_only: bool,
+    pub link: bool,
 }
 
 impl Config {
@@ -130,7 +130,7 @@ impl Config {
         Ok(Config {
             apps: Apps::new(&base_dir, apps.0)?,
             base_dir,
-            check_only: args.check_only,
+            link: args.link,
         })
     }
 
