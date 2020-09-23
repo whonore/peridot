@@ -1,2 +1,2 @@
-# dotty
+# peridot
 A dotfile manager.

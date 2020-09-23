@@ -101,7 +101,7 @@ fn home_dir() -> PathBuf {
 }
 
 fn find_config(base_dir: &Path) -> PathBuf {
-    base_dir.join("dotty.toml")
+    base_dir.join("peridot.toml")
 }
 
 #[derive(Debug)]

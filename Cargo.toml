@@ -1,10 +1,10 @@
 [package]
-name = "dotty"
+name = "peridot"
 version = "0.1.0"
 authors = ["Wolf Honoré <wolfhonore@gmail.com>"]
 edition = "2018"
 description = "A dotfile manager."
-repository = "https://github.com/whonore/dotty"
+repository = "https://github.com/whonore/peridot"
 license = "MIT"
 keywords = ["dotfiles"]
 categories = ["command-line-utilities", "config", "filesystem"]

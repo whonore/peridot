@@ -57,17 +57,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dotty"
-version = "0.1.0"
-dependencies = [
- "ansi_term 0.12.1",
- "anyhow",
- "serde",
- "structopt",
- "toml",
-]
-
-[[package]]
 name = "heck"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -96,6 +85,17 @@ name = "libc"
 version = "0.2.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
+
+[[package]]
+name = "peridot"
+version = "0.1.0"
+dependencies = [
+ "ansi_term 0.12.1",
+ "anyhow",
+ "serde",
+ "structopt",
+ "toml",
+]
 
 [[package]]
 name = "proc-macro-error"
