@@ -1,13 +1,13 @@
 [package]
 name = "dotty"
 version = "0.1.0"
-authors = ["whonore <wolfhonore@gmail.com>"]
+authors = ["Wolf Honoré <wolfhonore@gmail.com>"]
 edition = "2018"
-description = "A dotile manager."
+description = "A dotfile manager."
 repository = "https://github.com/whonore/dotty"
 license = "MIT"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["dotfiles"]
+categories = ["command-line-utilities", "config", "filesystem"]
 
 [dependencies]
 structopt = "0.3"
