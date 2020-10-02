@@ -28,10 +28,18 @@ pub struct App {
 }
 
 impl App {
-    fn new(base_dir: &Path, name: &str, app: AppConfig) -> Result<Self> {
+    fn new<P: AsRef<Path>>(base_dir: P, name: &str, app: AppConfig) -> Result<Self> {
         Ok(App {
-            srcdir: resolve_env(Path::new(app.srcdir.as_deref().unwrap_or("$HOME")))?,
-            dstdir: resolve_env(&base_dir.join(app.dstdir.as_deref().unwrap_or(name)))?,
+            srcdir: app
+                .srcdir
+                .as_ref()
+                .map(resolve_env)
+                .unwrap_or_else(|| Ok(dirs::home_dir().unwrap()))?,
+            dstdir: resolve_env(
+                &base_dir
+                    .as_ref()
+                    .join(app.dstdir.as_deref().unwrap_or(name)),
+            )?,
             description: app.description,
             links: app
                 .links
@@ -64,11 +72,11 @@ impl App {
 pub struct Apps(pub HashMap<String, App>);
 
 impl Apps {
-    fn new(base_dir: &Path, apps: HashMap<String, AppConfig>) -> Result<Apps> {
+    fn new<P: AsRef<Path>>(base_dir: P, apps: HashMap<String, AppConfig>) -> Result<Apps> {
         let apps = apps
             .into_iter()
             .map(|(name, app)| {
-                let app = App::new(base_dir, &name, app)?;
+                let app = App::new(&base_dir, &name, app)?;
                 Ok((name, app))
             })
             .collect::<Result<_>>()?;
@@ -95,8 +103,8 @@ pub struct Cli {
     exclude_apps: Option<Vec<String>>,
 }
 
-fn find_config(base_dir: &Path) -> PathBuf {
-    base_dir.join("peridot.toml")
+fn find_config<P: AsRef<Path>>(base_dir: P) -> PathBuf {
+    base_dir.as_ref().join("peridot.toml")
 }
 
 #[derive(Debug)]

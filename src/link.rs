@@ -57,18 +57,18 @@ impl Link {
     }
 }
 
-pub fn check_link(
+pub fn check_link<P: AsRef<Path>>(
     apps: &Apps,
-    dstdir: &Path,
-    srcdir: &Path,
+    dstdir: P,
+    srcdir: P,
     link: &(String, String),
 ) -> result::Result<Link, PathError> {
     let (dst, src) = link;
-    let dst = dstdir.join(resolve_name(
+    let dst = dstdir.as_ref().join(resolve_name(
         &|name| apps.resolve_name(name),
-        &resolve_env(Path::new(dst))?,
+        &resolve_env(dst)?,
     )?);
-    let src = srcdir.join(resolve_env(Path::new(src))?);
+    let src = srcdir.as_ref().join(resolve_env(src)?);
 
     if src.exists() {
         let real_dst = src.read_link()?;

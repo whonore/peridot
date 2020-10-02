@@ -67,16 +67,16 @@ impl fmt::Display for AppError<'_> {
 }
 
 #[derive(Debug)]
-struct AppLink<'a>(&'a Path);
+struct AppLink<P: AsRef<Path>>(P);
 
-impl fmt::Display for AppLink<'_> {
+impl<P: AsRef<Path>> fmt::Display for AppLink<P> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let color = if self.0.exists() {
+        let color = if self.0.as_ref().exists() {
             Color::Cyan
         } else {
             Color::Red
         };
-        write!(f, "{}", color.paint(self.0.display().to_string()))
+        write!(f, "{}", color.paint(self.0.as_ref().display().to_string()))
     }
 }
 
@@ -90,7 +90,7 @@ enum AppResult {
 }
 
 impl AppResult {
-    fn display_link(src: &Path, dst: &Path) -> Vec<String> {
+    fn display_link<P: AsRef<Path>>(src: P, dst: P) -> Vec<String> {
         vec![format!(
             "{}{} {} {} {}",
             Color::Green.paint(SUCCESS),
@@ -101,7 +101,7 @@ impl AppResult {
         )]
     }
 
-    fn display_notlink(src: &Path, dst: &Path, err: &dyn fmt::Display) -> Vec<String> {
+    fn display_notlink<P: AsRef<Path>>(src: P, dst: P, err: &dyn fmt::Display) -> Vec<String> {
         vec![
             format!(
                 "{}{} {} {} {}",

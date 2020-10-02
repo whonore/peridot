@@ -42,22 +42,23 @@ impl From<shellexpand::LookupError<env::VarError>> for PathError {
     }
 }
 
-pub fn resolve_env(path: &Path) -> result::Result<PathBuf, PathError> {
-    shellexpand::full(&path.display().to_string())
+pub fn resolve_env<P: AsRef<Path>>(path: P) -> result::Result<PathBuf, PathError> {
+    shellexpand::full(&path.as_ref().display().to_string())
         .map(|p| PathBuf::from(p.to_string()))
         .map_err(|e| e.into())
 }
 
-pub fn resolve_name<F>(lookup: &F, path: &Path) -> Result<PathBuf, PathError>
+pub fn resolve_name<F, P: AsRef<Path>>(lookup: &F, path: P) -> Result<PathBuf, PathError>
 where
     F: Fn(&str) -> Option<PathBuf>,
 {
-    path.iter()
+    path.as_ref()
+        .iter()
         .map(|comp| {
             let comp = comp.to_string_lossy();
             if comp.starts_with("{{") && comp.ends_with("}}") {
                 lookup(&comp[2..comp.len() - 2]).ok_or_else(|| InvalidNameRef {
-                    path: path.into(),
+                    path: path.as_ref().into(),
                     name: comp.into(),
                 })
             } else {
