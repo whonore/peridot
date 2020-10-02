@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -96,10 +95,6 @@ pub struct Cli {
     exclude_apps: Option<Vec<String>>,
 }
 
-fn home_dir() -> PathBuf {
-    PathBuf::from(env::var("HOME").unwrap())
-}
-
 fn find_config(base_dir: &Path) -> PathBuf {
     base_dir.join("peridot.toml")
 }
@@ -115,7 +110,7 @@ impl Config {
     pub fn new(args: Cli) -> Result<Config> {
         let base_dir = args
             .base_dir
-            .unwrap_or_else(|| home_dir().join(".dotfiles"))
+            .unwrap_or_else(|| dirs::home_dir().unwrap().join(".dotfiles"))
             .canonicalize()?;
         let config_file = args
             .config_file

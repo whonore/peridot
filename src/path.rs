@@ -7,7 +7,7 @@ use std::result;
 
 #[derive(Debug)]
 pub enum PathError {
-    InvalidEnvVar { path: PathBuf, env: String },
+    InvalidEnvVar(shellexpand::LookupError<env::VarError>),
     InvalidNameRef { path: PathBuf, name: String },
     NoParent(String),
     IoError(io::Error),
@@ -18,12 +18,7 @@ use PathError::*;
 impl fmt::Display for PathError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            InvalidEnvVar { path, env } => write!(
-                f,
-                "Could not find environment variable {} in {}",
-                env,
-                path.display()
-            ),
+            InvalidEnvVar(e) => write!(f, "{}", e),
             InvalidNameRef { path, name } => {
                 write!(f, "Invalid name reference {} in {}", name, path.display())
             }
@@ -41,20 +36,16 @@ impl From<io::Error> for PathError {
     }
 }
 
+impl From<shellexpand::LookupError<env::VarError>> for PathError {
+    fn from(e: shellexpand::LookupError<env::VarError>) -> Self {
+        InvalidEnvVar(e)
+    }
+}
+
 pub fn resolve_env(path: &Path) -> result::Result<PathBuf, PathError> {
-    path.iter()
-        .map(|comp| {
-            let comp = comp.to_string_lossy();
-            if comp.starts_with('$') {
-                env::var(&comp[1..]).map_err(|_| InvalidEnvVar {
-                    path: path.into(),
-                    env: comp.into(),
-                })
-            } else {
-                Ok(comp.into())
-            }
-        })
-        .collect()
+    shellexpand::full(&path.display().to_string())
+        .map(|p| PathBuf::from(p.to_string()))
+        .map_err(|e| e.into())
 }
 
 pub fn resolve_name<F>(lookup: &F, path: &Path) -> Result<PathBuf, PathError>
