@@ -169,11 +169,11 @@ impl AppOutput {
         }
     }
 
-    pub fn output_link(&mut self, res: Link) {
+    pub fn link(&mut self, res: Link) {
         self.results.push(AppResult::Ok(res))
     }
 
-    pub fn output_error(&mut self, error: PathError, link: Option<(PathBuf, PathBuf)>) {
+    pub fn error(&mut self, error: PathError, link: Option<(PathBuf, PathBuf)>) {
         self.results.push(AppResult::Err { error, link })
     }
 }

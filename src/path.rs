@@ -42,13 +42,13 @@ impl From<shellexpand::LookupError<env::VarError>> for PathError {
     }
 }
 
-pub fn resolve_env<P: AsRef<Path>>(path: P) -> result::Result<PathBuf, PathError> {
+pub fn expand_env<P: AsRef<Path>>(path: P) -> result::Result<PathBuf, PathError> {
     shellexpand::full(&path.as_ref().display().to_string())
         .map(|p| PathBuf::from(p.to_string()))
         .map_err(|e| e.into())
 }
 
-pub fn resolve_name<F, P: AsRef<Path>>(lookup: &F, path: P) -> Result<PathBuf, PathError>
+pub fn expand_app<F, P: AsRef<Path>>(lookup: &F, path: P) -> Result<PathBuf, PathError>
 where
     F: Fn(&str) -> Option<PathBuf>,
 {

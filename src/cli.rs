@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-use crate::path::resolve_env;
+use crate::path::expand_env;
 
 #[derive(Debug, Deserialize)]
 #[serde(transparent)]
@@ -33,9 +33,9 @@ impl App {
             srcdir: app
                 .srcdir
                 .as_ref()
-                .map(resolve_env)
+                .map(expand_env)
                 .unwrap_or_else(|| Ok(dirs::home_dir().unwrap()))?,
-            dstdir: resolve_env(
+            dstdir: expand_env(
                 &base_dir
                     .as_ref()
                     .join(app.dstdir.as_deref().unwrap_or(name)),
@@ -83,7 +83,7 @@ impl Apps {
         Ok(Apps(apps))
     }
 
-    pub fn resolve_name(&self, name: &str) -> Option<PathBuf> {
+    pub fn dir(&self, name: &str) -> Option<PathBuf> {
         self.0.get(name).map(|app| app.dstdir.clone())
     }
 }

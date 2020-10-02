@@ -20,16 +20,16 @@ fn link(apps: &Apps, name: &str, app: &App, do_link: bool) -> Result<AppOutput> 
                 SrcUnexists => {
                     if do_link {
                         match make_link(link.src.clone(), link.dst.clone()) {
-                            Ok(link) => out.output_link(link),
-                            Err(e) => out.output_error(e, Some((link.src, link.dst))),
+                            Ok(link) => out.link(link),
+                            Err(e) => out.error(e, Some((link.src, link.dst))),
                         }
                     } else {
-                        out.output_link(link)
+                        out.link(link)
                     }
                 }
-                _ => out.output_link(link),
+                _ => out.link(link),
             },
-            Err(e) => out.output_error(e, None),
+            Err(e) => out.error(e, None),
         }
     }
     Ok(out)

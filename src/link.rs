@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::result;
 
 use crate::cli::Apps;
-use crate::path::{resolve_env, resolve_name, PathError};
+use crate::path::{expand_app, expand_env, PathError};
 
 #[derive(Debug)]
 pub enum LinkStatus {
@@ -64,11 +64,10 @@ pub fn check_link<P: AsRef<Path>>(
     link: &(String, String),
 ) -> result::Result<Link, PathError> {
     let (dst, src) = link;
-    let dst = dstdir.as_ref().join(resolve_name(
-        &|name| apps.resolve_name(name),
-        &resolve_env(dst)?,
-    )?);
-    let src = srcdir.as_ref().join(resolve_env(src)?);
+    let dst = dstdir
+        .as_ref()
+        .join(expand_app(&|name| apps.dir(name), &expand_env(dst)?)?);
+    let src = srcdir.as_ref().join(expand_env(src)?);
 
     if src.exists() {
         let real_dst = src.read_link()?;
