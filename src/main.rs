@@ -41,7 +41,7 @@ fn main() -> Result<()> {
 
     // TODO: multithreading
     for (name, app) in &config.apps.0 {
-        let out = link(&config.apps, &name, &app, config.link)?;
+        let out = link(&config.apps, name, app, config.link)?;
         println!("{}", out);
     }
     Ok(())
