@@ -14,7 +14,7 @@
         pname = "peridot";
         version = "0.1.1";
         src = ./.;
-        cargoSha256 = "0dkyja8i7dkxn1pr9xpxlxfwx0sffn6xnwv9nylrscapvqmz68vf";
+        cargoHash = "sha256-uvx8d3u9GjchdzgnI6k4WWuyPGW6lnB7gY2ihFalTTU=";
 
         meta = with pkgs.lib; {
           description = "A dotfile manager";
